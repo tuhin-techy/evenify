@@ -58,6 +58,10 @@ const Payment = () => {
   const [paymentId, setPaymentId] = useState(null);
   const [payError, setPayError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [successEventTitle, setSuccessEventTitle] = useState("");
+  const [alreadyBooked, setAlreadyBooked] = useState(false);
+  const [alreadyBookedTitle, setAlreadyBookedTitle] = useState("");
+  const bookingCompletedRef = useRef(false);
 
   const rzpRef = useRef(null);
 
@@ -100,6 +104,22 @@ const Payment = () => {
         setPageLoading(false);
         return;
       }
+
+      const { data: existingTicket } = await supabase
+        .from("tickets")
+        .select("ticket_uid")
+        .eq("event_uid", id)
+        .eq("email", user.email)
+        .maybeSingle();
+
+      if (existingTicket) {
+        setAlreadyBooked(true);
+        setAlreadyBookedTitle(ev.title || "this event");
+        setEvent(ev);
+        setPageLoading(false);
+        return;
+      }
+
       setEvent(ev);
       setPageLoading(false);
     };
@@ -114,6 +134,7 @@ const Payment = () => {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "events" },
         (payload) => {
+          if (bookingCompletedRef.current) return;
           const ev = payload.new;
           if (ev.event_uid !== id) return;
           if (ev.visibility !== "Public" || ev.status !== "Ongoing") {
@@ -131,6 +152,7 @@ const Payment = () => {
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "events" },
         (payload) => {
+          if (bookingCompletedRef.current) return;
           if (payload.old?.event_uid === id) {
             rzpRef.current?.close();
             rzpRef.current = null;
@@ -200,6 +222,8 @@ const Payment = () => {
       description: event.title,
       handler: async (response) => {
         rzpRef.current = null;
+        bookingCompletedRef.current = true;
+        setSuccessEventTitle(event?.title || "this event");
         const txId = response.razorpay_payment_id;
         const uid = await saveTicket(txId);
         setPaymentId(txId);
@@ -235,6 +259,8 @@ const Payment = () => {
   const handleFreeConfirm = async () => {
     setPayError("");
     setSaving(true);
+    bookingCompletedRef.current = true;
+    setSuccessEventTitle(event?.title || "this event");
     const uid = await saveTicket("FREE");
     setPaymentId("FREE");
     setTicketUid(uid);
@@ -247,26 +273,6 @@ const Payment = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-900 via-gray-900 to-black text-white text-lg">
         Loading...
-      </div>
-    );
-  }
-
-  // ── Event not available ──
-  if (eventError) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-purple-900 via-gray-900 to-black text-white gap-4 text-center px-6">
-        <span className="text-7xl">🔍</span>
-        <h2 className="text-3xl font-bold">Event not available</h2>
-        <p className="text-white/50">
-          This event may have ended, been cancelled, or is no longer open to the
-          public.
-        </p>
-        <button
-          onClick={() => navigate("/events")}
-          className="mt-4 px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-medium hover:scale-105 transition-all"
-        >
-          ← Back to Events
-        </button>
       </div>
     );
   }
@@ -290,11 +296,11 @@ const Payment = () => {
             🎉
           </motion.div>
           <h2 className="text-2xl font-bold mb-3 text-green-600">
-            {event?.free ? "Booking Confirmed!" : "Payment Successful!"}
+            {bookingData?.free ? "Booking Confirmed!" : "Payment Successful!"}
           </h2>
           <p className="text-gray-500 mb-5 leading-relaxed">
-            Your ticket for <strong>{event?.title}</strong> has been booked
-            successfully.
+            Your ticket for <strong>{successEventTitle || event?.title}</strong>{" "}
+            has been booked successfully.
           </p>
 
           {ticketUid && (
@@ -324,9 +330,55 @@ const Payment = () => {
             onClick={() => navigate("/events")}
             className="mt-3 w-full py-2 text-gray-400 text-sm hover:text-gray-600 transition"
           >
-            Back to Events
+            ← Back to Events
           </button>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (alreadyBooked) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-purple-900 via-gray-900 to-black text-white gap-4 text-center px-6">
+        <span className="text-7xl">✅</span>
+        <h2 className="text-3xl font-bold">Ticket already booked</h2>
+        <p className="text-white/70 max-w-lg text-lg leading-relaxed">
+          You have already booked a ticket for{" "}
+          <strong>{alreadyBookedTitle}</strong>. No second booking is allowed
+          for this event.
+        </p>
+        <button
+          onClick={() => navigate("/my-tickets")}
+          className="mt-2 px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-medium hover:scale-105 transition-all"
+        >
+          View My Tickets
+        </button>
+        <button
+          onClick={() => navigate("/events")}
+          className="text-white/60 hover:text-white transition"
+        >
+          ← Back to Events
+        </button>
+      </div>
+    );
+  }
+
+  // ── Event not available ──
+  if (eventError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-purple-900 via-gray-900 to-black text-white gap-4 text-center px-6">
+        <span className="text-7xl">🔍</span>
+        <h2 className="text-3xl font-bold">Event not available</h2>
+        <p className="text-white/50">
+          This event may have ended, been cancelled, or is no longer open to the
+          public.
+        </p>
+        <button
+          onClick={() => navigate("/events")}
+          className="mt-4 px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-medium hover:scale-105 transition-all"
+        >
+          ← Back to Events
+        </button>
       </div>
     );
   }

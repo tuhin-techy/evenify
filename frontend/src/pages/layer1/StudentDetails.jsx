@@ -85,6 +85,8 @@ const StudentDetails = () => {
   const [role, setRole] = useState(null);
   const [event, setEvent] = useState(null);
   const [eventError, setEventError] = useState(false);
+  const [alreadyBooked, setAlreadyBooked] = useState(false);
+  const [alreadyBookedTitle, setAlreadyBookedTitle] = useState("");
 
   // Modals / gates
   const [showIncomplete, setShowIncomplete] = useState(false);
@@ -102,6 +104,8 @@ const StudentDetails = () => {
     setShowIncomplete(false);
     setIneligibleMsg("");
     setShowDisclaimer(false);
+    setAlreadyBooked(false);
+    setAlreadyBookedTitle("");
 
     const load = async () => {
       const {
@@ -136,6 +140,20 @@ const StudentDetails = () => {
         return;
       }
       setEvent(ev);
+
+      const { data: existingTicket } = await supabase
+        .from("tickets")
+        .select("ticket_uid")
+        .eq("event_uid", id)
+        .eq("email", user.email)
+        .maybeSingle();
+
+      if (existingTicket) {
+        setAlreadyBooked(true);
+        setAlreadyBookedTitle(ev.title || "this event");
+        setPageLoading(false);
+        return;
+      }
 
       if (!isProfileComplete(result.profile, result.role)) {
         setShowIncomplete(true);
@@ -221,6 +239,32 @@ const StudentDetails = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-900 via-gray-900 to-black text-white text-lg">
         Loading...
+      </div>
+    );
+  }
+
+  if (alreadyBooked) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-purple-900 via-gray-900 to-black text-white gap-4 text-center px-6">
+        <span className="text-7xl">✅</span>
+        <h2 className="text-3xl font-bold">Ticket already booked</h2>
+        <p className="text-white/70 max-w-lg text-lg leading-relaxed">
+          You have already booked a ticket for{" "}
+          <strong>{alreadyBookedTitle}</strong>. You can view your booking
+          details in My Tickets.
+        </p>
+        <button
+          onClick={() => navigate("/my-tickets")}
+          className="mt-2 px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-medium hover:scale-105 transition-all"
+        >
+          View My Tickets
+        </button>
+        <button
+          onClick={() => navigate("/events")}
+          className="text-white/60 hover:text-white transition"
+        >
+          ← Back to Events
+        </button>
       </div>
     );
   }

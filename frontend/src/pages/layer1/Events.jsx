@@ -60,6 +60,7 @@ const Events = () => {
 
   const [authDone, setAuthDone] = useState(false);
   const [accessType, setAccessType] = useState(null);
+  const [authEmail, setAuthEmail] = useState("");
 
   // List state
   const [events, setEvents] = useState([]);
@@ -71,6 +72,8 @@ const Events = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailGone, setDetailGone] = useState(false);
   const [detailBgError, setDetailBgError] = useState(false);
+  const [detailAlreadyBooked, setDetailAlreadyBooked] = useState(false);
+  const [detailBookedTitle, setDetailBookedTitle] = useState("");
 
   // ── Rotating background ──
   useEffect(() => {
@@ -93,6 +96,7 @@ const Events = () => {
         navigate("/");
         return;
       }
+      setAuthEmail(user.email || "");
       setAccessType(at);
       setAuthDone(true);
     });
@@ -156,11 +160,13 @@ const Events = () => {
 
   // ── 3. Fetch detail + real-time ──
   useEffect(() => {
-    if (!authDone || !accessType || !id) return;
+    if (!authDone || !accessType || !id || !authEmail) return;
 
     const vals = accessVals(accessType);
     setDetailLoading(true);
     setDetailGone(false);
+    setDetailAlreadyBooked(false);
+    setDetailBookedTitle("");
 
     const fetchDetail = async () => {
       const { data } = await supabase
@@ -181,6 +187,23 @@ const Events = () => {
         setDetailEvent(data);
         setDetailGone(false);
       }
+
+      const { data: existingTicket } = await supabase
+        .from("tickets")
+        .select("ticket_uid")
+        .eq("event_uid", id)
+        .eq("email", authEmail)
+        .maybeSingle();
+
+      if (existingTicket) {
+        setDetailEvent(data);
+        setDetailBookedTitle(data.title || "this event");
+        setDetailAlreadyBooked(true);
+        setDetailGone(false);
+        setDetailLoading(false);
+        return;
+      }
+
       setDetailLoading(false);
     };
 
@@ -222,7 +245,7 @@ const Events = () => {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [authDone, accessType, id]);
+  }, [authDone, accessType, id, authEmail]);
 
   // ── Auth pending ──
   if (!authDone) {
@@ -239,6 +262,32 @@ const Events = () => {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-900 via-gray-900 to-black text-white text-lg">
           Loading event...
+        </div>
+      );
+    }
+
+    if (detailAlreadyBooked) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-purple-900 via-gray-900 to-black text-white gap-4 px-6 text-center">
+          <span className="text-7xl">✅</span>
+          <h2 className="text-3xl font-bold">Ticket already booked</h2>
+          <p className="text-white/70 max-w-lg text-lg leading-relaxed">
+            You have already booked a ticket for{" "}
+            <strong>{detailBookedTitle}</strong>. You can check your booking
+            details in My Tickets.
+          </p>
+          <button
+            onClick={() => navigate("/my-tickets")}
+            className="mt-2 px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-medium hover:scale-105 transition-all"
+          >
+            View My Tickets
+          </button>
+          <button
+            onClick={() => navigate("/events")}
+            className="text-white/60 hover:text-white transition"
+          >
+            ← Back to Events
+          </button>
         </div>
       );
     }

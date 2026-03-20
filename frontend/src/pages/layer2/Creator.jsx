@@ -309,7 +309,34 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
   const [tagInput, setTagInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [showPublicWarning, setShowPublicWarning] = useState(false);
+  const [bookedCount, setBookedCount] = useState(
+    Number(event?.tickets_booked || 0),
+  );
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchBookedCount = async () => {
+      const { count } = await supabase
+        .from("tickets")
+        .select("id", { count: "exact", head: true })
+        .eq("event_uid", event.event_uid);
+
+      if (!isMounted) return;
+
+      // Fallback to events.tickets_booked if count is unavailable.
+      setBookedCount(
+        typeof count === "number" ? count : Number(event?.tickets_booked || 0),
+      );
+    };
+
+    fetchBookedCount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [event.event_uid, event.tickets_booked]);
 
   const validateEditFieldErrors = (name, form, cur = {}) => {
     const e = { ...cur };
@@ -365,9 +392,14 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
           : delete e.price;
         break;
       case "tickets":
-        !form.tickets || parseInt(form.tickets, 10) <= 0
-          ? (e.tickets = "Number of tickets must be greater than 0")
-          : delete e.tickets;
+        {
+          const totalTickets = parseInt(form.tickets, 10);
+          if (!form.tickets || Number.isNaN(totalTickets) || totalTickets <= 0)
+            e.tickets = "Number of tickets must be greater than 0";
+          else if (totalTickets < bookedCount)
+            e.tickets = `Total tickets cannot be less than already booked tickets (${bookedCount}).`;
+          else delete e.tickets;
+        }
         break;
       case "access":
         !form.access ? (e.access = "Select access") : delete e.access;
@@ -972,7 +1004,7 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
                 <div className="flex-1">
                   <input
                     type="number"
-                    min="1"
+                    min={Math.max(1, bookedCount)}
                     name="tickets"
                     value={formData.tickets}
                     placeholder="No. of Tickets"
@@ -987,6 +1019,13 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
                   {editErrors.tickets && (
                     <p className="text-red-400 text-sm mt-1">
                       {editErrors.tickets}
+                    </p>
+                  )}
+                  {!editErrors.tickets && (
+                    <p className="text-white/50 text-xs mt-1">
+                      Already booked: {bookedCount}. You can keep the same value
+                      or increase it, and can decrease only down to{" "}
+                      {bookedCount}.
                     </p>
                   )}
                 </div>
@@ -1591,6 +1630,23 @@ const Creator = () => {
 
   // ── Update event details in DB ──
   const handleUpdate = async (updated) => {
+    const requestedTickets = parseInt(updated.tickets, 10);
+    const { count: bookedCount } = await supabase
+      .from("tickets")
+      .select("id", { count: "exact", head: true })
+      .eq("event_uid", updated.event_uid);
+
+    const booked = Number.isFinite(bookedCount)
+      ? bookedCount
+      : Number(updated.tickets_booked || 0);
+
+    if (Number.isNaN(requestedTickets) || requestedTickets < booked) {
+      showAlert(
+        `Cannot save update. Total tickets cannot be less than already booked tickets (${booked}).`,
+      );
+      return false;
+    }
+
     setSaving(true);
     const { error } = await supabase
       .from("events")
