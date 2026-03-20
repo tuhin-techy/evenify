@@ -414,11 +414,13 @@ const Navbar = () => {
                     <div className="px-4 py-2 border-b border-white/10">
                       <span
                         className={`text-sm font-semibold px-3 py-1 rounded-full ${
-                          isLayer2
-                            ? "bg-purple-500/40 text-purple-200"
-                            : role === "outsider"
-                              ? "bg-blue-500/40 text-blue-200"
-                              : "bg-green-500/30 text-green-200"
+                          role === "admin"
+                            ? "bg-amber-400/40 text-amber-200"
+                            : isManagement
+                              ? "bg-purple-500/40 text-purple-200"
+                              : role === "outsider"
+                                ? "bg-blue-500/40 text-blue-200"
+                                : "bg-green-500/30 text-green-200"
                         }`}
                       >
                         {role === "management"

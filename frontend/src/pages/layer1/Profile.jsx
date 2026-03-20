@@ -65,7 +65,7 @@ const ROLE_BADGE = {
   },
   admin: {
     label: "Admin",
-    cls: "bg-red-500/20   text-red-700   border-red-300",
+    cls: "bg-amber-500/20 text-amber-700 border-amber-300",
   },
 };
 
