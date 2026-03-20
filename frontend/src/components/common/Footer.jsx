@@ -74,10 +74,22 @@ const Footer = () => {
   const showPrimaryActions = role !== "management" && role !== "admin";
 
   const socials = [
-    { label: "Instagram", icon: FaInstagram, href: "#" },
-    { label: "Facebook", icon: FaFacebookF, href: "#" },
-    { label: "X", icon: FaXTwitter, href: "#" },
-    { label: "LinkedIn", icon: FaLinkedinIn, href: "#" },
+    {
+      label: "Instagram",
+      icon: FaInstagram,
+      href: "https://www.instagram.com/mr_tuhin_0_1/",
+    },
+    {
+      label: "Facebook",
+      icon: FaFacebookF,
+      href: "https://www.facebook.com/tuhin.kumar.77128",
+    },
+    { label: "X", icon: FaXTwitter, href: "https://x.com/tuhin151kumar" },
+    {
+      label: "LinkedIn",
+      icon: FaLinkedinIn,
+      href: "https://www.linkedin.com/in/tuhin-kumar/",
+    },
   ];
 
   return (
@@ -175,6 +187,8 @@ const Footer = () => {
                     whileHover={{ y: -3, scale: 1.06 }}
                     whileTap={{ scale: 0.98 }}
                     href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={item.label}
                     className="h-10 w-10 rounded-xl border border-white/15 bg-white/5 text-slate-100 grid place-items-center transition hover:bg-white/15"
                   >

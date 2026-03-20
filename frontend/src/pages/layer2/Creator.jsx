@@ -964,6 +964,7 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
                       value={formData.free ? "" : formData.ticket_price}
                       disabled={formData.free}
                       placeholder="Ticket Price"
+                      onWheel={(e) => e.currentTarget.blur()}
                       onKeyDown={(e) =>
                         ["e", "E", "+", "-"].includes(e.key) &&
                         e.preventDefault()

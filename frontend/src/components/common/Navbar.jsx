@@ -43,6 +43,7 @@ const Navbar = () => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [roleLoading, setRoleLoading] = useState(true);
   const [logoHovered, setLogoHovered] = useState(false);
   const [dbPhoto, setDbPhoto] = useState(null);
@@ -59,6 +60,26 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const retryRef = useRef(null);
   const hideLoginButton = location.pathname === "/login";
+
+  const toggleMobileMenu = () => {
+    setMobileOpen((prev) => {
+      const next = !prev;
+      if (next) setOpen(false);
+      return next;
+    });
+  };
+
+  const toggleProfileMenu = () => {
+    setOpen((prev) => {
+      const next = !prev;
+      if (next) setMobileOpen(false);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -247,11 +268,11 @@ const Navbar = () => {
           : "bg-white/5 backdrop-blur-lg"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center text-white relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center text-white relative">
         {/* ── Logo — left ── */}
         <Link
           to={logoLink}
-          className="flex-none text-3xl font-bold tracking-wide transition"
+          className="flex-none text-2xl sm:text-3xl font-bold tracking-wide transition"
         >
           <motion.span
             onHoverStart={() => setLogoHovered(true)}
@@ -323,12 +344,25 @@ const Navbar = () => {
         </div>
 
         {/* ── Right side ── */}
-        <div className="flex-none ml-auto" ref={dropdownRef}>
+        <div
+          className="flex-none ml-auto flex items-center gap-2 sm:gap-3"
+          ref={dropdownRef}
+        >
+          <button
+            onClick={toggleMobileMenu}
+            className="md:hidden w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center"
+            aria-label="Toggle navigation menu"
+          >
+            <span className="text-xl leading-none">
+              {mobileOpen ? "✕" : "☰"}
+            </span>
+          </button>
+
           {!user && !roleLoading && !hideLoginButton && (
             <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
               <Link
                 to="/login"
-                className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-xl font-semibold hover:opacity-90 transition"
+                className="px-5 py-2 sm:px-8 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-base sm:text-xl font-semibold hover:opacity-90 transition"
               >
                 Login
               </Link>
@@ -338,16 +372,16 @@ const Navbar = () => {
           {user && (
             <div className="relative">
               {location.pathname === "/profile" ? (
-                <div className="flex items-center gap-3 px-4 py-2 opacity-0 pointer-events-none select-none">
+                <div className="hidden md:flex items-center gap-3 px-2 sm:px-4 py-2 opacity-0 pointer-events-none select-none">
                   <div className="w-11 h-11 rounded-full" />
-                  <span className="text-lg font-semibold">
+                  <span className="hidden sm:inline text-lg font-semibold">
                     Hello, {userName}
                   </span>
                 </div>
               ) : (
                 <button
-                  onClick={() => setOpen(!open)}
-                  className="flex items-center gap-3 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 transition border border-white/10"
+                  onClick={toggleProfileMenu}
+                  className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 transition border border-white/10"
                 >
                   {userPhoto && !photoImgErr ? (
                     <img
@@ -362,7 +396,7 @@ const Navbar = () => {
                       {userName[0].toUpperCase()}
                     </div>
                   )}
-                  <span className="text-lg font-semibold">
+                  <span className="hidden sm:inline text-lg font-semibold">
                     Hello, {userName}
                   </span>
                 </button>
@@ -420,6 +454,161 @@ const Navbar = () => {
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden border-t border-white/10 bg-black/40 backdrop-blur-xl"
+          >
+            <div className="px-4 py-4 space-y-3 text-white">
+              {!user && !roleLoading && (
+                <>
+                  <Link
+                    to="/"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    to="/events"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Events
+                  </Link>
+                  <Link
+                    to="/support"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Support
+                  </Link>
+                </>
+              )}
+
+              {user && isClient && (
+                <>
+                  <Link
+                    to="/"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    to="/events"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Events
+                  </Link>
+                  <Link
+                    to="/my-tickets"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    My Tickets
+                  </Link>
+                  <Link
+                    to="/support"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Support
+                  </Link>
+                </>
+              )}
+
+              {user && isManagement && (
+                <>
+                  <Link
+                    to="/creator"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Creator
+                  </Link>
+                  <Link
+                    to="/successful"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Successful
+                  </Link>
+                  <Link
+                    to="/cancelled"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Cancelled
+                  </Link>
+                </>
+              )}
+
+              {user && isAdmin && (
+                <>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/students"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Student
+                  </Link>
+                  <Link
+                    to="/guests"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Guest
+                  </Link>
+                  <Link
+                    to="/managements"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-lg font-medium"
+                  >
+                    Management
+                  </Link>
+                </>
+              )}
+
+              {user && (
+                <div className="pt-3 border-t border-white/10 space-y-2">
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      navigate("/profile");
+                    }}
+                    className="w-full text-left py-2 text-lg font-medium"
+                  >
+                    My Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full text-left py-2 text-lg font-semibold text-red-300"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.nav>
   );
 };

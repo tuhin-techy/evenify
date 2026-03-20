@@ -303,7 +303,7 @@ const Profile = () => {
       </div>
 
       {/* ── Profile Card ── */}
-      <div className="relative z-20 max-w-5xl mx-auto px-6 -mt-10 pb-24">
+      <div className="relative z-20 max-w-5xl mx-auto px-6 -mt-20 pb-24">
         <motion.div
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
@@ -321,7 +321,7 @@ const Profile = () => {
 
           <div className="grid md:grid-cols-3 gap-10">
             {/* ── LEFT: fields ── */}
-            <div className="md:col-span-2 space-y-5">
+            <div className="order-2 md:order-1 md:col-span-2 space-y-5">
               {/* Name — editable only for manual (email/password) login */}
               {isManualLogin ? (
                 <div>
@@ -428,7 +428,7 @@ const Profile = () => {
             </div>
 
             {/* ── RIGHT: photo (read-only, from Google account) ── */}
-            <div className="flex flex-col items-center gap-4">
+            <div className="order-1 md:order-2 flex flex-col items-center gap-4">
               {normalizePhotoUrl(
                 profile?.photo_url ||
                   authUser?.user_metadata?.avatar_url ||

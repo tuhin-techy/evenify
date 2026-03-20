@@ -32,8 +32,22 @@ const Login = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [genError, setGenError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleBtnWidth, setGoogleBtnWidth] = useState(320);
   const debounceRef = useRef(null);
   const googleWrapRef = useRef(null);
+
+  useEffect(() => {
+    const updateGoogleWidth = () => {
+      const vw = window.innerWidth;
+      const horizontalSpace = vw < 640 ? 170 : 180;
+      const next = Math.max(200, Math.min(320, vw - horizontalSpace));
+      setGoogleBtnWidth(next);
+    };
+
+    updateGoogleWidth();
+    window.addEventListener("resize", updateGoogleWidth);
+    return () => window.removeEventListener("resize", updateGoogleWidth);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -390,7 +404,7 @@ const Login = () => {
 
                 <div
                   ref={googleWrapRef}
-                  className="flex justify-center rounded-xl border border-white/70 bg-white p-2 shadow-inner"
+                  className="w-full max-w-[320px] mx-auto flex justify-center overflow-hidden rounded-xl border border-white/70 bg-white p-2 shadow-inner"
                 >
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
@@ -402,7 +416,7 @@ const Login = () => {
                     shape="pill"
                     size="large"
                     text="continue_with"
-                    width="320"
+                    width={googleBtnWidth}
                     logo_alignment="left"
                   />
                 </div>
@@ -438,18 +452,14 @@ const Login = () => {
                           : "border-gray-300 focus:ring-purple-500"
                     }`}
                 />
-                {emailFormatErr && (
-                  <p className="text-red-500 text-xs mt-1">
-                    ❌ {emailFormatErr}
-                  </p>
-                )}
-                {!emailFormatErr && emailStatus && (
-                  <p
-                    className={`text-xs mt-1 ${statusColor[emailStatus.type]}`}
-                  >
-                    {statusIcon[emailStatus.type]}
-                    {emailStatus.msg}
-                  </p>
+                {(emailFormatErr || emailStatus) && (
+                  <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                    <p className="text-red-700 text-xs font-medium">
+                      {emailFormatErr
+                        ? `❌ ${emailFormatErr}`
+                        : `${statusIcon[emailStatus.type]}${emailStatus.msg}`}
+                    </p>
+                  </div>
                 )}
               </div>
 

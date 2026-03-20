@@ -182,8 +182,8 @@ const Payment = () => {
       program_level: bookingData.program_level,
       id_card_number: bookingData.id_card_number || null,
       notes: bookingData.notes || null,
-      amount: bookingData.amount,
-      free: bookingData.free,
+      amount: payableAmount,
+      free: isFree,
     };
 
     const { data, error } = await supabase
@@ -216,7 +216,7 @@ const Payment = () => {
 
     const options = {
       key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      amount: Math.round((bookingData?.amount ?? 0) * 100),
+      amount: Math.round(payableAmount * 100),
       currency: "INR",
       name: "Evenify",
       description: event.title,
@@ -296,7 +296,7 @@ const Payment = () => {
             🎉
           </motion.div>
           <h2 className="text-2xl font-bold mb-3 text-green-600">
-            {bookingData?.free ? "Booking Confirmed!" : "Payment Successful!"}
+            {isFree ? "Booking Confirmed!" : "Payment Successful!"}
           </h2>
           <p className="text-gray-500 mb-5 leading-relaxed">
             Your ticket for <strong>{successEventTitle || event?.title}</strong>{" "}
@@ -383,7 +383,10 @@ const Payment = () => {
     );
   }
 
-  const isFree = bookingData?.free;
+  const isFree = Boolean(event?.free ?? bookingData?.free);
+  const payableAmount = isFree
+    ? 0
+    : Number(event?.ticket_price ?? bookingData?.amount ?? 0);
   const bgImage = event?.image_url;
 
   return (
@@ -446,7 +449,7 @@ const Payment = () => {
             <span
               className={`text-2xl font-extrabold ${isFree ? "text-green-600" : "text-purple-600"}`}
             >
-              {isFree ? "Free 🎉" : `₹${bookingData?.amount}`}
+              {isFree ? "Free 🎉" : `₹${payableAmount}`}
             </span>
           </div>
         </div>
@@ -499,7 +502,7 @@ const Payment = () => {
               ? "Opening Payment Gateway..."
               : saving
                 ? "Saving ticket..."
-                : `💳 Pay ₹${bookingData?.amount}`}
+                : `💳 Pay ₹${payableAmount}`}
           </motion.button>
         )}
 
