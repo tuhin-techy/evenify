@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { getUserProfile } from "../../utils/role";
+import confetti from "canvas-confetti";
 
 // Lazily injects the Razorpay checkout script from CDN
 const loadRazorpayScript = () =>
@@ -64,6 +65,53 @@ const Payment = () => {
   const bookingCompletedRef = useRef(false);
 
   const rzpRef = useRef(null);
+
+  // ── Calculate payment-related values early (needed in success screen) ──
+  const isFree = Boolean(event?.free ?? bookingData?.free);
+  const payableAmount = isFree
+    ? 0
+    : Number(event?.ticket_price ?? bookingData?.amount ?? 0);
+  const bgImage = event?.image_url;
+
+  // Trigger corner fountain-style confetti when success screen appears
+  useEffect(() => {
+    if (paySuccess) {
+      // Bottom-left fountain (shoots up-right)
+      confetti({
+        particleCount: 80,
+        angle: 60,              // tilted toward right
+        spread: 55,
+        origin: { x: 0.05, y: 0.95 },   // near bottom-left corner
+        startVelocity: 35,
+        decay: 0.91,
+        gravity: 0.8,
+        drift: 0.1,
+      });
+
+      // Bottom-right fountain (shoots up-left)
+      confetti({
+        particleCount: 80,
+        angle: 120,             // tilted toward left
+        spread: 55,
+        origin: { x: 0.95, y: 0.95 },   // near bottom-right corner
+        startVelocity: 35,
+        decay: 0.91,
+        gravity: 0.8,
+        drift: -0.1,
+      });
+
+      // Optional: small center burst after ~200ms for extra pop
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          spread: 70,
+          origin: { y: 0.7 },
+          startVelocity: 25,
+          decay: 0.93,
+        });
+      }, 220);
+    }
+  }, [paySuccess]);
 
   // ── Guard: if no booking data, send back ──
   useEffect(() => {
@@ -285,7 +333,7 @@ const Payment = () => {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.6, type: "spring" }}
-          className="bg-white text-gray-800 rounded-3xl shadow-2xl p-12 max-w-sm w-full text-center"
+          className="bg-white text-gray-800 rounded-3xl shadow-2xl p-12 max-w-sm w-full text-center relative overflow-hidden"
         >
           <motion.div
             initial={{ scale: 0 }}
@@ -344,8 +392,7 @@ const Payment = () => {
         <h2 className="text-3xl font-bold">Ticket already booked</h2>
         <p className="text-white/70 max-w-lg text-lg leading-relaxed">
           You have already booked a ticket for{" "}
-          <strong>{alreadyBookedTitle}</strong>. No second booking is allowed
-          for this event.
+          <strong>{alreadyBookedTitle}</strong>. Please check your tickets page or contact support if you think this is a mistake.
         </p>
         <button
           onClick={() => navigate("/my-tickets")}
@@ -382,12 +429,6 @@ const Payment = () => {
       </div>
     );
   }
-
-  const isFree = Boolean(event?.free ?? bookingData?.free);
-  const payableAmount = isFree
-    ? 0
-    : Number(event?.ticket_price ?? bookingData?.amount ?? 0);
-  const bgImage = event?.image_url;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-purple-900 via-gray-900 to-black text-white">

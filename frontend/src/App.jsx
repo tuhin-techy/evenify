@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import Home from "./pages/layer1/Home";
 import Events from "./pages/layer1/Events";
@@ -23,6 +24,12 @@ import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer";
 
 function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname]);
+
   return (
     <>
       <Navbar />
