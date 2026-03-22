@@ -409,7 +409,7 @@ const Navbar = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-3 w-52 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-xl shadow-2xl overflow-hidden"
+                    className="absolute right-0 mt-3 w-52 border-t border-white/10 bg-black/25 backdrop-blur-2xl backdrop-saturate-150 md:bg-white/10 md:border md:border-white/20 text-white rounded-xl shadow-2xl overflow-hidden"
                   >
                     <div className="px-4 py-2 border-b border-white/10">
                       <span
