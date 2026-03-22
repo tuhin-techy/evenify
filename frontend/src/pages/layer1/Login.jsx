@@ -31,7 +31,8 @@ const Login = () => {
   const [resendUsed, setResendUsed] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [genError, setGenError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [googleBtnWidth, setGoogleBtnWidth] = useState(320);
   const debounceRef = useRef(null);
   const googleWrapRef = useRef(null);
@@ -189,11 +190,11 @@ const Login = () => {
 
   // ── Send OTP (from email step) ──
   const handleSendOtp = async () => {
-    if (!canProceed || loading) return;
+    if (!canProceed || otpLoading) return;
     setGenError("");
     setOtpErr("");
     setOtp("");
-    setLoading(true);
+    setOtpLoading(true);
     try {
       await sendOtpToEmail(email, isSignup);
       setStep("otp");
@@ -202,17 +203,17 @@ const Login = () => {
     } catch (err) {
       setGenError(err.message || "Failed to send OTP. Try again.");
     } finally {
-      setLoading(false);
+      setOtpLoading(false);
     }
   };
 
   // ── Resend OTP ──
   const handleResendOtp = async () => {
-    if (loading || resendUsed || resendCooldown > 0) return;
+    if (otpLoading || resendUsed || resendCooldown > 0) return;
     setOtpErr("");
     setOtp("");
     setGenError("");
-    setLoading(true);
+    setOtpLoading(true);
     try {
       await sendOtpToEmail(email, isSignup);
       setResendUsed(true);
@@ -220,7 +221,7 @@ const Login = () => {
     } catch (err) {
       setOtpErr(err.message || "Failed to resend OTP. Try again.");
     } finally {
-      setLoading(false);
+      setOtpLoading(false);
     }
   };
 
@@ -231,7 +232,7 @@ const Login = () => {
       setOtpErr("Enter the 6-digit OTP from your email.");
       return;
     }
-    setLoading(true);
+    setOtpLoading(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
         email: email.toLowerCase(),
@@ -240,7 +241,7 @@ const Login = () => {
       });
       if (error) {
         setOtpErr("Invalid or expired OTP. Try again.");
-        setLoading(false);
+        setOtpLoading(false);
         return;
       }
 
@@ -256,13 +257,14 @@ const Login = () => {
     } catch (err) {
       setOtpErr(err.message || "OTP verification failed.");
     } finally {
-      setLoading(false);
+      setOtpLoading(false);
     }
   };
 
   // ── Google sign-in ──
   const handleGoogleSuccess = async (response) => {
-    setLoading(true);
+    if (googleLoading) return;
+    setGoogleLoading(true);
     setGenError("");
     try {
       const { data, error } = await supabase.auth.signInWithIdToken({
@@ -284,7 +286,7 @@ const Login = () => {
       if (!isAllowedDomain(userEmail)) {
         await supabase.auth.signOut();
         setGenError("Only @gmail.com and @somaiya.edu accounts are allowed.");
-        setLoading(false);
+        setGoogleLoading(false);
         return;
       }
 
@@ -295,7 +297,7 @@ const Login = () => {
           setGenError(
             "Access denied. Your Somaiya email is not registered. Contact college administrator.",
           );
-          setLoading(false);
+          setGoogleLoading(false);
           return;
         }
         const tableMap = {
@@ -304,34 +306,46 @@ const Login = () => {
           admin: "admin",
         };
         const table = tableMap[role];
-        if (table)
-          await supabase
-            .from(table)
-            .update({ name, photo_url: photo })
-            .eq("email", userEmail);
-        await supabase
-          .from("login")
-          .upsert({ email: userEmail }, { onConflict: "email" });
-      } else {
-        await supabase
-          .from("outsiders")
-          .upsert(
-            { email: userEmail, name, photo_url: photo },
-            { onConflict: "email" },
+        const updates = [
+          supabase
+            .from("login")
+            .upsert({ email: userEmail }, { onConflict: "email" }),
+        ];
+        if (table) {
+          updates.push(
+            supabase
+              .from(table)
+              .update({ name, photo_url: photo })
+              .eq("email", userEmail),
           );
-        if (photo)
-          await supabase.auth.updateUser({
-            data: { avatar_url: photo, picture: photo },
-          });
-        await supabase
-          .from("login")
-          .upsert({ email: userEmail }, { onConflict: "email" });
+        }
+        await Promise.all(updates);
+      } else {
+        const updates = [
+          supabase
+            .from("outsiders")
+            .upsert(
+              { email: userEmail, name, photo_url: photo },
+              { onConflict: "email" },
+            ),
+          supabase
+            .from("login")
+            .upsert({ email: userEmail }, { onConflict: "email" }),
+        ];
+        if (photo) {
+          updates.push(
+            supabase.auth.updateUser({
+              data: { avatar_url: photo, picture: photo },
+            }),
+          );
+        }
+        await Promise.all(updates);
       }
       navigate("/", { replace: true });
     } catch (err) {
       setGenError(err.message || "Google sign-in failed. Try again.");
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
 
@@ -404,7 +418,7 @@ const Login = () => {
 
                 <div
                   ref={googleWrapRef}
-                  className="w-full max-w-[321px] mx-auto flex justify-center overflow-hidden rounded-xl border border-white/70 bg-white p-2 shadow-inner"
+                  className="w-full max-w-[340px] mx-auto flex justify-center overflow-hidden rounded-xl border border-white/70 bg-white p-2 shadow-inner"
                 >
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
@@ -465,15 +479,15 @@ const Login = () => {
 
               <button
                 onClick={handleSendOtp}
-                disabled={!canProceed || loading}
+                disabled={!canProceed || otpLoading}
                 className={`w-full py-3 rounded-lg font-semibold transition
                   ${
-                    !canProceed || loading
+                    !canProceed || otpLoading
                       ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                       : "bg-purple-600 hover:bg-purple-700 text-white"
                   }`}
               >
-                {loading ? "Sending OTP..." : "Send OTP"}
+                {otpLoading ? "Sending OTP..." : "Send OTP"}
               </button>
             </div>
           )}
@@ -525,11 +539,11 @@ const Login = () => {
 
               <button
                 onClick={handleVerifyOtp}
-                disabled={loading}
+                disabled={otpLoading}
                 className={`w-full py-3 rounded-lg font-semibold transition text-white
-                  ${loading ? "bg-gray-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
+                  ${otpLoading ? "bg-gray-300 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}
               >
-                {loading
+                {otpLoading
                   ? "Verifying..."
                   : isSignup
                     ? "Verify & Create Account"
@@ -549,7 +563,7 @@ const Login = () => {
                 </button>
                 <button
                   onClick={handleResendOtp}
-                  disabled={loading || resendUsed || resendCooldown > 0}
+                  disabled={otpLoading || resendUsed || resendCooldown > 0}
                   className="text-purple-600 hover:underline font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {resendUsed && resendCooldown === 0
