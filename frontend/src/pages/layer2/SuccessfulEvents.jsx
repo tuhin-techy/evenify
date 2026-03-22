@@ -286,14 +286,9 @@ const SuccessfulEvents = () => {
 
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
       const { data, error } = await supabase
         .from("events")
         .select("*")
-        .eq("created_by", user.email)
         .eq("status", "Successful")
         .order("created_at", { ascending: false });
       if (!error && data) setEvents(data);

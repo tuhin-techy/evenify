@@ -567,7 +567,7 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto overscroll-contain"
+        className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-3xl max-h-[92vh] md:max-h-[90vh] overflow-y-auto overscroll-contain"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -595,7 +595,7 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
         {/* ── VIEW MODE ── */}
         {!editing && (
           <>
-            <div className="mb-8 rounded-2xl overflow-hidden border border-white/10 h-64 w-full bg-black/40">
+            <div className="mb-8 rounded-2xl overflow-hidden border border-white/10 h-44 sm:h-56 md:h-64 w-full bg-black/40">
               {formData.image_url ? (
                 <img
                   src={formData.image_url}
@@ -811,7 +811,7 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
               <p className="text-sm uppercase tracking-widest text-white/50 pb-2 mb-4 border-b border-white/10">
                 Basic Details
               </p>
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-4 md:gap-6">
                 <div className="md:col-span-2">
                   <input
                     name="title"
@@ -898,7 +898,7 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
               <p className="text-sm uppercase tracking-widest text-white/50 pb-2 mb-4 border-b border-white/10">
                 Audience
               </p>
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-1">
                   <p className="mb-1">Department</p>
                   <div className="flex flex-wrap gap-2">
@@ -951,7 +951,7 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
               <p className="text-sm uppercase tracking-widest text-white/50 pb-2 mb-4 border-b border-white/10">
                 Ticketing & Access
               </p>
-              <div className="flex gap-4 items-start mb-4">
+              <div className="flex flex-col md:flex-row gap-4 items-start mb-4">
                 <div className="flex-1">
                   <div
                     className={`flex items-center border rounded-lg px-3 h-11 ${formData.free ? "bg-gray-700/50" : "bg-white/10"}`}
@@ -1063,7 +1063,7 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
               <p className="text-sm uppercase tracking-widest text-white/50 pb-2 mb-4 border-b border-white/10">
                 Tags
               </p>
-              <div className="flex gap-2 mb-2">
+              <div className="flex flex-col sm:flex-row gap-2 mb-2">
                 <input
                   value={tagInput}
                   onChange={(e) =>
@@ -1081,7 +1081,7 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
                 />
                 <button
                   onClick={addTag}
-                  className="px-5 bg-purple-500 rounded-lg text-sm"
+                  className="px-5 h-11 md:h-auto bg-purple-500 rounded-lg text-sm"
                 >
                   Add
                 </button>
@@ -1127,20 +1127,20 @@ const DetailModal = ({ event, onClose, onUpdate, saving }) => {
               </p>
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between">
               <button
                 onClick={() => {
                   setEditing(false);
                   setFormData({ ...event });
                 }}
-                className="px-8 py-3 bg-red-500/30 border border-red-500/30 rounded-full hover:bg-red-500/50 hover:scale-105 transition-all text-red-300"
+                className="w-full sm:w-auto px-6 md:px-8 py-3 bg-red-500/30 border border-red-500/30 rounded-full hover:bg-red-500/50 hover:scale-105 transition-all text-red-300"
               >
                 ✕ Discard Changes
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className={`px-8 py-3 rounded-full font-medium shadow-lg hover:scale-105 transition-all ${saving ? "bg-gray-500 cursor-not-allowed" : "bg-gradient-to-r from-purple-500 to-pink-500"}`}
+                className={`w-full sm:w-auto px-6 md:px-8 py-3 rounded-full font-medium shadow-lg hover:scale-105 transition-all ${saving ? "bg-gray-500 cursor-not-allowed" : "bg-gradient-to-r from-purple-500 to-pink-500"}`}
               >
                 {saving ? "Saving..." : "💾 Save Changes"}
               </button>
@@ -1216,7 +1216,7 @@ const Creator = () => {
       } = await supabase.auth.getUser();
       if (!user) return;
       setCreatorEmail(user.email);
-      await fetchEvents(user.email);
+      await fetchEvents();
     };
     init();
   }, []);
@@ -1232,7 +1232,6 @@ const Creator = () => {
           event: "*",
           schema: "public",
           table: "events",
-          filter: `created_by=eq.${creatorEmail}`,
         },
         async (payload) => {
           const type = payload.eventType;
@@ -1294,12 +1293,11 @@ const Creator = () => {
     };
   }, [creatorEmail]);
 
-  const fetchEvents = async (email, { silent = false } = {}) => {
+  const fetchEvents = async ({ silent = false } = {}) => {
     if (!silent) setLoadingEvents(true);
     const { data, error } = await supabase
       .from("events")
       .select("*")
-      .eq("created_by", email)
       .eq("status", "Ongoing")
       .order("created_at", { ascending: false });
     if (!error && data) {
@@ -1699,7 +1697,7 @@ const Creator = () => {
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-20 px-6 bg-gradient-to-br from-purple-900 via-black to-pink-900 text-white">
+    <div className="min-h-screen pt-24 md:pt-28 pb-20 px-4 sm:px-6 bg-gradient-to-br from-purple-900 via-black to-pink-900 text-white">
       <AnimatePresence>
         {alertMsg && (
           <motion.div
@@ -1720,7 +1718,7 @@ const Creator = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-5xl md:text-6xl font-extrabold tracking-tight"
+          className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight"
         >
           Event Studio
         </motion.h1>
@@ -1815,14 +1813,14 @@ const Creator = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4"
+            className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-3 sm:p-4"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto overscroll-contain"
+              className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-3xl max-h-[92vh] md:max-h-[90vh] overflow-y-auto overscroll-contain"
             >
               <StepBar step={step} />
 
@@ -1844,7 +1842,7 @@ const Creator = () => {
                     className="mb-6 relative group cursor-pointer"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <div className="w-full h-64 border-2 border-dashed border-white/30 rounded-xl overflow-hidden">
+                    <div className="w-full h-44 sm:h-56 md:h-64 border-2 border-dashed border-white/30 rounded-xl overflow-hidden">
                       {formData.imagePreview ? (
                         <img
                           src={formData.imagePreview}
@@ -1879,7 +1877,7 @@ const Creator = () => {
                     <p className="text-sm uppercase tracking-widest text-white/50 pb-2 mb-4 border-b border-white/10">
                       Basic Details
                     </p>
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid md:grid-cols-2 gap-4 md:gap-6">
                       <div className="md:col-span-2 space-y-1">
                         <input
                           name="title"
@@ -1956,7 +1954,7 @@ const Creator = () => {
                     <p className="text-sm uppercase tracking-widest text-white/50 pb-2 mb-4 border-b border-white/10">
                       Audience
                     </p>
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid md:grid-cols-2 gap-4 md:gap-6">
                       <div className="space-y-1">
                         <p className="mb-1">Department</p>
                         <div className="flex flex-wrap gap-2">
@@ -2009,7 +2007,7 @@ const Creator = () => {
                     <p className="text-sm uppercase tracking-widest text-white/50 pb-2 mb-4 border-b border-white/10">
                       Ticketing & Access
                     </p>
-                    <div className="flex gap-4 items-start mb-4">
+                    <div className="flex flex-col md:flex-row gap-4 items-start mb-4">
                       <div className="flex-1">
                         <div
                           className={`relative flex items-center border rounded-lg px-3 h-11 ${formData.free ? "bg-gray-700/50" : "bg-white/10"}`}
@@ -2121,7 +2119,7 @@ const Creator = () => {
                       Tags
                     </p>
                     <div className="space-y-2">
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input
                           value={tagInput}
                           onChange={(e) =>
@@ -2141,7 +2139,7 @@ const Creator = () => {
                         />
                         <button
                           onClick={addTag}
-                          className="px-5 bg-purple-500 rounded-lg text-sm"
+                          className="px-5 h-11 md:h-auto bg-purple-500 rounded-lg text-sm"
                         >
                           Add
                         </button>
@@ -2194,16 +2192,16 @@ const Creator = () => {
                     </div>
                   </div>
 
-                  <div className="flex justify-between mt-8">
+                  <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between mt-8">
                     <button
                       onClick={() => setOpen(false)}
-                      className="px-8 py-3 bg-red-500/30 border border-red-500/30 rounded-full hover:bg-red-500/50 hover:scale-105 transition-all"
+                      className="w-full sm:w-auto px-6 md:px-8 py-3 bg-red-500/30 border border-red-500/30 rounded-full hover:bg-red-500/50 hover:scale-105 transition-all"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleNext}
-                      className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-medium shadow-lg hover:scale-105 transition-all"
+                      className="w-full sm:w-auto px-6 md:px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-medium shadow-lg hover:scale-105 transition-all"
                     >
                       Next →
                     </button>
@@ -2228,7 +2226,7 @@ const Creator = () => {
                     <span className="text-4xl">📋</span>
                   </div>
 
-                  <div className="mb-8 rounded-2xl overflow-hidden border border-white/10 h-64 w-full bg-black/40">
+                  <div className="mb-8 rounded-2xl overflow-hidden border border-white/10 h-44 sm:h-56 md:h-64 w-full bg-black/40">
                     {formData.imagePreview ? (
                       <img
                         src={formData.imagePreview}
@@ -2355,17 +2353,17 @@ const Creator = () => {
                     </p>
                   </div>
 
-                  <div className="flex justify-between">
+                  <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between">
                     <button
                       onClick={handleBack}
-                      className="px-8 py-3 bg-red-500/30 border border-red-500/30 rounded-full hover:bg-red-500/50 hover:scale-105 transition-all"
+                      className="w-full sm:w-auto px-6 md:px-8 py-3 bg-red-500/30 border border-red-500/30 rounded-full hover:bg-red-500/50 hover:scale-105 transition-all"
                     >
                       ← Back
                     </button>
                     <button
                       onClick={handleCreate}
                       disabled={saving}
-                      className={`px-8 py-3 rounded-full font-medium shadow-lg hover:scale-105 transition-all ${saving ? "bg-gray-500 cursor-not-allowed" : "bg-gradient-to-r from-purple-500 to-pink-500"}`}
+                      className={`w-full sm:w-auto px-6 md:px-8 py-3 rounded-full font-medium shadow-lg hover:scale-105 transition-all ${saving ? "bg-gray-500 cursor-not-allowed" : "bg-gradient-to-r from-purple-500 to-pink-500"}`}
                     >
                       {saving ? "Creating..." : "🚀 Create Event"}
                     </button>
