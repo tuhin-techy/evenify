@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabaseClient";
+import { getUserRole } from "../../utils/role";
 import heroImage from "../../assets/images/hero.jpg";
 import event1 from "../../assets/images/event1.jpg";
 import event2 from "../../assets/images/event2.jpg";
@@ -12,6 +14,7 @@ const Home = () => {
   const aboutRef = useRef(null);
   const heroSlides = [heroImage, event1, event2, event3, event4];
   const [activeSlide, setActiveSlide] = useState(0);
+  const [hideExploreButton, setHideExploreButton] = useState(false);
 
   const scrollToAbout = () => {
     aboutRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -24,6 +27,34 @@ const Home = () => {
 
     return () => window.clearInterval(interval);
   }, [heroSlides.length]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const resolveRole = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!isMounted) return;
+
+      if (!user?.email) {
+        setHideExploreButton(false);
+        return;
+      }
+
+      const role = await getUserRole(user.email);
+      if (!isMounted) return;
+
+      setHideExploreButton(role === "management" || role === "admin");
+    };
+
+    resolveRole();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const faqItems = [
     {
@@ -132,14 +163,16 @@ const Home = () => {
           </motion.div>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <motion.button
-              onClick={() => navigate("/events")}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-10 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 rounded-full text-lg font-semibold shadow-2xl"
-            >
-              Explore Events
-            </motion.button>
+            {!hideExploreButton && (
+              <motion.button
+                onClick={() => navigate("/events")}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-10 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 rounded-full text-lg font-semibold shadow-2xl"
+              >
+                Explore Events
+              </motion.button>
+            )}
 
             <motion.button
               onClick={scrollToAbout}
