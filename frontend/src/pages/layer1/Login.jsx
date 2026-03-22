@@ -404,7 +404,7 @@ const Login = () => {
 
                 <div
                   ref={googleWrapRef}
-                  className="w-full max-w-[320px] mx-auto flex justify-center overflow-hidden rounded-xl border border-white/70 bg-white p-2 shadow-inner"
+                  className="w-full max-w-[321px] mx-auto flex justify-center overflow-hidden rounded-xl border border-white/70 bg-white p-2 shadow-inner"
                 >
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
