@@ -35,6 +35,7 @@ const Login = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleBtnWidth, setGoogleBtnWidth] = useState(320);
   const debounceRef = useRef(null);
+  const emailCheckSeqRef = useRef(0);
   const googleWrapRef = useRef(null);
 
   useEffect(() => {
@@ -95,21 +96,22 @@ const Login = () => {
 
   // ── Real-time email validation + debounced DB check ──
   useEffect(() => {
+    const normalizedEmail = email.trim().toLowerCase();
     setEmailDbStatus(null);
     setGenError("");
 
-    if (!email) {
+    if (!normalizedEmail) {
       setEmailFormatErr("");
       return;
     }
 
     if (isSignup) {
-      if (!isGmailOnly(email)) {
+      if (!isGmailOnly(normalizedEmail)) {
         setEmailFormatErr("Only @gmail.com is allowed for sign up");
         return;
       }
     } else {
-      if (!isAllowedLogin(email)) {
+      if (!isAllowedLogin(normalizedEmail)) {
         setEmailFormatErr("Only @gmail.com or @somaiya.edu is allowed");
         return;
       }
@@ -118,12 +120,15 @@ const Login = () => {
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setEmailDbStatus("checking");
+    const checkSeq = ++emailCheckSeqRef.current;
     debounceRef.current = setTimeout(async () => {
       const { data } = await supabase
         .from("login")
         .select("email")
-        .eq("email", email.toLowerCase())
+        .eq("email", normalizedEmail)
         .maybeSingle();
+
+      if (emailCheckSeqRef.current !== checkSeq) return;
       setEmailDbStatus(data ? "exists" : "not_exists");
     }, 500);
 
@@ -147,9 +152,11 @@ const Login = () => {
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
+  const normalizedEmail = email.trim().toLowerCase();
+
   // ── Derived email status message ──
   const emailStatus = (() => {
-    if (!email || emailFormatErr) return null;
+    if (!normalizedEmail || emailFormatErr) return null;
     if (emailDbStatus === "checking")
       return { type: "info", msg: "Checking..." };
     if (isSignup) {
@@ -159,7 +166,7 @@ const Login = () => {
         return { type: "success", msg: "Email available! You can proceed." };
     } else {
       if (emailDbStatus === "not_exists") {
-        return isSomaiyaOnly(email)
+        return isSomaiyaOnly(normalizedEmail)
           ? {
               type: "error",
               msg: "Contact college administrator regarding this.",
@@ -176,8 +183,8 @@ const Login = () => {
   })();
 
   const canProceed = isSignup
-    ? isGmailOnly(email) && emailDbStatus === "not_exists"
-    : isAllowedLogin(email) && emailDbStatus === "exists";
+    ? isGmailOnly(normalizedEmail) && emailDbStatus === "not_exists"
+    : isAllowedLogin(normalizedEmail) && emailDbStatus === "exists";
 
   // ── Core OTP sender ──
   const sendOtpToEmail = async (targetEmail, shouldCreateUser) => {
@@ -196,7 +203,7 @@ const Login = () => {
     setOtp("");
     setOtpLoading(true);
     try {
-      await sendOtpToEmail(email, isSignup);
+      await sendOtpToEmail(normalizedEmail, isSignup);
       setStep("otp");
       setResendUsed(false);
       setResendCooldown(60); // disable resend for 60s from first send
@@ -215,7 +222,7 @@ const Login = () => {
     setGenError("");
     setOtpLoading(true);
     try {
-      await sendOtpToEmail(email, isSignup);
+      await sendOtpToEmail(normalizedEmail, isSignup);
       setResendUsed(true);
       setResendCooldown(60); // disable again for 60s after resend
     } catch (err) {
@@ -235,7 +242,7 @@ const Login = () => {
     setOtpLoading(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         token: otp.trim(),
         type: "email",
       });
@@ -248,10 +255,10 @@ const Login = () => {
       if (isSignup) {
         await supabase
           .from("login")
-          .upsert({ email: email.toLowerCase() }, { onConflict: "email" });
+          .upsert({ email: normalizedEmail }, { onConflict: "email" });
         await supabase
           .from("outsiders")
-          .upsert({ email: email.toLowerCase() }, { onConflict: "email" });
+          .upsert({ email: normalizedEmail }, { onConflict: "email" });
       }
       navigate("/", { replace: true });
     } catch (err) {
@@ -467,8 +474,28 @@ const Login = () => {
                     }`}
                 />
                 {(emailFormatErr || emailStatus) && (
-                  <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-                    <p className="text-red-700 text-xs font-medium">
+                  <div
+                    className={`mt-2 rounded-lg border px-3 py-2 ${
+                      emailFormatErr
+                        ? "border-red-200 bg-red-50"
+                        : emailStatus?.type === "success"
+                          ? "border-green-200 bg-green-50"
+                          : emailStatus?.type === "info"
+                            ? "border-blue-200 bg-blue-50"
+                            : "border-red-200 bg-red-50"
+                    }`}
+                  >
+                    <p
+                      className={`text-sm font-medium ${
+                        emailFormatErr
+                          ? "text-red-700"
+                          : emailStatus?.type === "success"
+                            ? "text-green-700"
+                            : emailStatus?.type === "info"
+                              ? "text-blue-700"
+                              : "text-red-700"
+                      }`}
+                    >
                       {emailFormatErr
                         ? `❌ ${emailFormatErr}`
                         : `${statusIcon[emailStatus.type]}${emailStatus.msg}`}
