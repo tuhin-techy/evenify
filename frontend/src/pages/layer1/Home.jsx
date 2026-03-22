@@ -15,6 +15,7 @@ const Home = () => {
   const heroSlides = [heroImage, event1, event2, event3, event4];
   const [activeSlide, setActiveSlide] = useState(0);
   const [hideExploreButton, setHideExploreButton] = useState(false);
+  const [roleResolving, setRoleResolving] = useState(true);
 
   const scrollToAbout = () => {
     aboutRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -31,28 +32,52 @@ const Home = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const resolveRole = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const roleCacheKey = (email) => `role:${(email || "").toLowerCase()}`;
 
+    const resolveRoleForUser = async (user) => {
       if (!isMounted) return;
 
       if (!user?.email) {
         setHideExploreButton(false);
+        setRoleResolving(false);
         return;
       }
 
-      const role = await getUserRole(user.email);
+      const email = user.email.toLowerCase();
+      const cachedRole = localStorage.getItem(roleCacheKey(email));
+
+      if (cachedRole) {
+        setHideExploreButton(
+          cachedRole === "management" || cachedRole === "admin",
+        );
+        setRoleResolving(false);
+      } else {
+        // Avoid flash for management/admin while role is being resolved.
+        setHideExploreButton(true);
+        setRoleResolving(true);
+      }
+
+      const role = await getUserRole(email);
       if (!isMounted) return;
 
+      if (role) localStorage.setItem(roleCacheKey(email), role);
       setHideExploreButton(role === "management" || role === "admin");
+      setRoleResolving(false);
     };
 
-    resolveRole();
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => resolveRoleForUser(session?.user));
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        resolveRoleForUser(session?.user ?? null);
+      },
+    );
 
     return () => {
       isMounted = false;
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
@@ -163,7 +188,7 @@ const Home = () => {
           </motion.div>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            {!hideExploreButton && (
+            {!hideExploreButton && !roleResolving && (
               <motion.button
                 onClick={() => navigate("/events")}
                 whileHover={{ scale: 1.08 }}
