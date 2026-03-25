@@ -500,7 +500,7 @@ const Events = () => {
                             : "bg-gradient-to-r from-purple-500 to-pink-500"
                         }`}
                     >
-                      {isSoldOut ? "🎫 Sold Out" : "Book Ticket"}
+                      {isSoldOut ? "🎫 Sold Out" : "Let's Go!"}
                     </motion.button>
                   </div>
                 </div>
