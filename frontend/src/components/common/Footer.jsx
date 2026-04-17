@@ -203,7 +203,7 @@ const Footer = () => {
 
       <div className="w-full border-t border-white/10" />
       <div className="w-full px-6 py-6 text-center text-sm md:text-base text-slate-300">
-        © {new Date().getFullYear()} Evenify. All rights reserved.
+        © {new Date().getFullYear()} Evenify. All rights reserved by Tuhin Kumar.
       </div>
     </footer>
   );
