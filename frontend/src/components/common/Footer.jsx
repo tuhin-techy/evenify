@@ -165,7 +165,7 @@ const Footer = () => {
               </p>
               <p className="flex items-start gap-3">
                 <FiPhoneCall className="mt-0.5 text-cyan-300" />
-                <span>+91 98765 43210</span>
+                <span>+91 7304316374</span>
               </p>
               <a
                 href="https://maps.google.com/?q=Somaiya+Vidyavihar+University+Mumbai"

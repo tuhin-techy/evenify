@@ -136,7 +136,7 @@ const Support = () => {
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">
                 Contact Number ☎️
               </p>
-              <p className="font-semibold text-gray-900">+91 90000 12345</p>
+              <p className="font-semibold text-gray-900">+91 9073185624</p>
             </div>
             <div className="rounded-2xl border border-gray-200 bg-white p-4">
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">
